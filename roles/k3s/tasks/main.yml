@@ -1,0 +1,10 @@
+- name: Common system setup
+  include_tasks: common.yml
+
+- name: Install K3s on first master
+  when: inventory_hostname == groups['masters'][0]
+  include_tasks: install_k3s_master1.yml
+
+- name: Install K3s on other masters
+  when: inventory_hostname != groups['masters'][0]
+  include_tasks: install_k3s_other_masters.yml

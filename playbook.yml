@@ -1,0 +1,5 @@
+- name: Setup K3s HA Cluster
+  hosts: masters
+  become: true
+  roles:
+    - k3s

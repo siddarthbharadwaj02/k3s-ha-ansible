@@ -1,0 +1,23 @@
+- name: Check if K3s is already installed
+  stat:
+    path: /etc/rancher/k3s/k3s.yaml
+  register: k3s_installed
+
+- name: Fetch K3s token from master1
+  delegate_to: "{{ groups['masters'][0] }}"
+  slurp:
+    src: /tmp/k3s_token_shared
+  register: fetched_token
+  when: not k3s_installed.stat.exists
+
+- name: Set K3s token fact
+  set_fact:
+    k3s_token: "{{ fetched_token['content'] | b64decode | trim }}"
+  when: not k3s_installed.stat.exists
+
+- name: Install K3s on other masters
+  shell: |
+    curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION="v1.30.1+k3s1"     K3S_URL="https://{{ hostvars[groups['masters'][0]].ansible_host }}:6443"     K3S_TOKEN="{{ k3s_token }}"     INSTALL_K3S_EXEC="server --node-taint CriticalAddonsOnly=true:NoExecute --tls-san {{ hostvars[groups['masters'][0]].ansible_host }}"     sh -
+  args:
+    executable: /bin/bash
+  when: not k3s_installed.stat.exists
